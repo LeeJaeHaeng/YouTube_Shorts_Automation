@@ -1,0 +1,90 @@
+# ============================================
+# YouTube Shorts 자동화 파이프라인 설정
+# ============================================
+
+# --- 대본 생성 설정 ---
+generator:
+  model: "gemini-2.5-flash"
+  # 각 페르소나 정의
+  personas:
+    a:
+      name: "로직봇"
+      description: "극강의 논리와 데이터로 무장한 냉철한 AI 로봇. 감정은 비효율이라 판단하며, 모든 것을 수치와 확률로 분석한다."
+      tone: "냉정하고 단호하며, 통계와 논문을 인용한다"
+    b:
+      name: "감성시인"
+      description: "세상 모든 것에서 아름다움을 찾는 낭만적 시인. 논리보다 감정, 데이터보다 영감을 중시한다."
+      tone: "따뜻하고 감성적이며, 비유와 은유를 즐겨 사용한다"
+  # 토론 주제 풀 (랜덤 선택)
+  topics:
+    - "짜장면 vs 짬뽕, 인류의 운명을 건 최후의 선택"
+    - "만약 고양이가 세계를 지배한다면"
+    - "시간여행이 가능하다면 과거로 vs 미래로"
+    - "인생에서 가장 쓸모없지만 중요한 기술"
+    - "외계인에게 지구를 소개하는 3분 프레젠테이션"
+    - "잠을 안 자도 되는 능력 vs 밥을 안 먹어도 되는 능력"
+    - "AI가 연애 상담을 해준다면"
+    - "조선시대에 스마트폰이 있었다면"
+    - "세계에서 가장 쓸모없는 초능력 대회"
+    - "만약 동물들이 올림픽에 참가한다면"
+  # 대사 수 (한 캐릭터당)
+  lines_per_character: 5
+
+# --- TTS 설정 ---
+tts:
+  provider: "edge_tts"
+  edge_tts:
+    # 한국어 음성 목록: https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
+    voice_a: "ko-KR-InJoonNeural"    # 로직봇: 남성 (차분한 목소리)
+    voice_b: "ko-KR-SunHiNeural"     # 감성시인: 여성 (부드러운 목소리)
+    rate_a: "+10%"                    # 로직봇: 약간 빠르게
+    rate_b: "-5%"                     # 감성시인: 약간 느리게
+
+# --- 영상 편집 설정 ---
+editor:
+  # 영상 해상도 (9:16 세로)
+  width: 1080
+  height: 1920
+  fps: 30
+  # 배경 영상 (assets/backgrounds/ 폴더에 넣기)
+  background_video: "assets/backgrounds/background.mp4"
+  # 배경음악
+  bgm: "assets/bgm/bgm.mp3"
+  bgm_volume: 0.08
+  # 자막 스타일
+  subtitle:
+    font: "assets/fonts/NanumGothicBold.ttf"
+    font_size: 58
+    color: "white"
+    stroke_color: "black"
+    stroke_width: 3
+    position_y_ratio: 0.72  # 화면 하단 72% 위치
+    max_chars_per_line: 14
+  # 캐릭터 이름 표시
+  name_tag:
+    font_size: 42
+    color_a: "#00BFFF"   # 로직봇: 파란색
+    color_b: "#FF6B6B"   # 감성시인: 빨간색
+    position_y_ratio: 0.65
+
+# --- 유튜브 업로드 설정 ---
+uploader:
+  # OAuth 인증 파일 경로
+  client_secrets: "client_secrets.json"
+  token_file: "token.json"
+  # 업로드 기본값
+  category_id: "22"         # People & Blogs
+  privacy_status: "public"  # public / private / unlisted
+  tags:
+    - "쇼츠"
+    - "shorts"
+    - "AI토론"
+    - "AI debate"
+    - "웃긴영상"
+    - "페르소나"
+
+# --- 스케줄링 설정 ---
+schedule:
+  enabled: true
+  # 매일 실행 시간 (24시간 형식)
+  daily_time: "09:00"
