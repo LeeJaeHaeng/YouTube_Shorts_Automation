@@ -23,14 +23,22 @@ def upload_to_youtube(video_path: str, script: dict, config: dict) -> str:
     youtube = _get_youtube_service(up_cfg)
 
     # 메타데이터 구성
-    title = script.get("title", "AI 페르소나 토론")
+    title = script.get("title", script.get("topic", "AI 커플 갈등"))
     if len(title) > 100:
         title = title[:97] + "..."
 
     description = script.get("description", "")
-    description += "\n\n#Shorts #AI토론 #페르소나"
+    if not description:
+        situation = script.get("situation", "")
+        question = script.get("question", "").replace("\\n", " ")
+        description = f"{situation}\n\n{question}"
 
-    tags = up_cfg.get("tags", [])
+    # config의 태그를 해시태그로 추가
+    config_tags = up_cfg.get("tags", [])
+    hashtags = " ".join(f"#{t.replace(' ', '')}" for t in config_tags)
+    description = description.strip() + f"\n\n{hashtags}"
+
+    tags = list(config_tags)
     topic = script.get("topic", "")
     if topic:
         tags.append(topic[:30])
@@ -123,8 +131,13 @@ if __name__ == "__main__":
     output_dir = Path("output")
     latest_video = sorted(output_dir.glob("shorts_*.mp4"))[-1]
 
+    # debate_YYYYMMDD_HHMMSS.json 형식만 선택 (debate_test.json 등 제외)
     scripts_dir = Path("scripts")
-    latest_script = sorted(scripts_dir.glob("debate_*.json"))[-1]
+    dated_scripts = [
+        p for p in scripts_dir.glob("debate_*.json")
+        if p.stem.replace("debate_", "").replace("_", "").isdigit()
+    ]
+    latest_script = sorted(dated_scripts)[-1]
     with open(latest_script, encoding="utf-8") as f:
         script = json.load(f)
 
