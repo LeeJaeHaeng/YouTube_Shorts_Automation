@@ -9,6 +9,17 @@ from pathlib import Path
 import edge_tts
 from moviepy import AudioFileClip
 
+# 감정 레벨별 prosody 설정 (rate, pitch)
+# 영어 멀티링구얼 보이스로 한국어 읽을 때 감정 표현
+EMOTION_PROSODY = {
+    "shouting":  {"rate": "+60%", "pitch": "+180Hz"},  # 폭발 - 매우 빠르고 높음
+    "angry":     {"rate": "+45%", "pitch": "+120Hz"},  # 화남 - 빠르고 격양
+    "defiant":   {"rate": "+35%", "pitch": "+90Hz"},   # 단호 - 빠르고 강함
+    "upset":     {"rate": "+20%", "pitch": "+40Hz"},   # 억울/상처 - 살짝 빠름
+    "sarcastic": {"rate": "+15%", "pitch": "-20Hz"},   # 비꼬기 - 느리고 낮음
+    "normal":    {"rate": "+15%", "pitch": "+0Hz"},    # 기본
+}
+
 
 def synthesize_voices(script: dict, config: dict) -> list[dict]:
     """대본의 각 대사를 TTS로 변환하고 오디오 정보를 반환한다."""
@@ -62,8 +73,18 @@ async def _generate_all(
 
         out_path = audio_dir / f"line_{i:03d}_{speaker}.mp3"
 
+        # 감정 레벨에 따른 prosody 설정
+        emotion = line.get("emotion", "normal")
+        prosody = EMOTION_PROSODY.get(emotion, EMOTION_PROSODY["normal"])
+        # 기본 rate에 감정 rate를 덮어씀 (감정이 우선)
+        effective_rate = prosody["rate"]
+        effective_pitch = prosody["pitch"]
+
         # Edge TTS 생성
-        communicate = edge_tts.Communicate(text=text, voice=voice, rate=rate)
+        communicate = edge_tts.Communicate(
+            text=text, voice=voice,
+            rate=effective_rate, pitch=effective_pitch,
+        )
         await communicate.save(str(out_path))
 
         # moviepy로 오디오 길이 측정 (ffprobe 불필요)
@@ -80,7 +101,7 @@ async def _generate_all(
             "duration": duration_sec,
         })
 
-        print(f"[tts] ({i+1}/{len(script['lines'])}) {line['name']}: \"{text[:30]}\" → {duration_sec:.1f}s")
+        print(f"[tts] ({i+1}/{len(script['lines'])}) {line['name']}[{emotion}]: \"{text[:25]}\" → {duration_sec:.1f}s")
 
     return audio_entries
 

@@ -1,6 +1,7 @@
 """
 대본 생성 모듈
-Google Gemini API를 사용하여 두 페르소나의 토론 대본을 JSON으로 생성한다.
+Google Gemini API를 사용하여 남녀/커플 갈등 상황 대본을 JSON으로 생성한다.
+각 대사마다 Imagen 이미지 프롬프트가 포함된다.
 """
 
 import json
@@ -35,41 +36,76 @@ def generate_script(config: dict) -> dict:
     out_path.write_text(json.dumps(script, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print(f"[generator] 대본 생성 완료: {out_path}")
-    print(f"[generator] 주제: {topic}")
+    print(f"[generator] 주제: {script['topic']}")
+    print(f"[generator] 상황: {script.get('situation', '')}")
     print(f"[generator] 대사 수: {len(script['lines'])}개")
     return script
 
 
 def _build_prompt(personas: dict, topic: str, lines_per_char: int) -> str:
     total_lines = lines_per_char * 2
-    return f"""너는 유튜브 쇼츠 대본 작가야. 두 캐릭터가 황당한 주제로 티키타카 토론하는 대본을 만들어줘.
+    return f"""너는 유튜브 쇼츠 대본 전문 작가야. 실제 커플 싸움처럼 날 것 그대로의 대본을 써야 해.
+
+## 포맷
+실제 남녀/커플 갈등 상황에서 두 캐릭터가 감정적으로 충돌하는 대본.
+진짜 싸우는 것처럼 감정이 격하게 고조돼야 해. 마지막엔 시청자에게 판결 요청.
 
 ## 캐릭터
-- **{personas['a']['name']}**: {personas['a']['description']} (말투: {personas['a']['tone']})
-- **{personas['b']['name']}**: {personas['b']['description']} (말투: {personas['b']['tone']})
+- **{personas['a']['name']}** (남자): {personas['a']['description']}
+- **{personas['b']['name']}** (여자): {personas['b']['description']}
 
-## 주제
+## 상황
 "{topic}"
 
-## 규칙
-1. 총 {total_lines}개의 대사를 번갈아가며 작성 (A→B→A→B...)
-2. 각 대사는 반드시 30자 이내 (짧고 임팩트 있게, 쇼츠 자막용)
-3. 한 대사에 한 문장만 (마침표 하나)
-4. 첫 대사는 {personas['a']['name']}이 주제를 던지며 시작
-5. 마지막 대사는 웃긴 반전이나 펀치라인으로 마무리
-6. 각 캐릭터의 말투와 성격이 확실히 드러나게
-7. 한국어로 작성
-8. 절대로 30자를 초과하지 말 것
+## 대사 작성 규칙 (매우 중요!)
+1. 총 {total_lines}개 대사, A->B->A->B 순서
+2. 각 대사 10~25자 (진짜 싸울 때처럼 짧고 강렬하게)
+3. 실제 사람이 싸울 때 쓰는 말투로: 비속어, 줄임말, 은어, 감탄사 적극 활용
+   - 비속어 예: "아 진짜", "씨", "개열받아", "뭔 개소리야", "기가 막혀"
+   - 줄임말 예: "남친", "여친", "솔직", "ㄹㅇ", "존나", "완전"
+   - 감탄사 예: "야", "아니", "잠깐만", "ㅋㅋ 뭐야"
+4. 감정이 점점 고조되는 흐름 (처음엔 따지기 → 나중엔 폭발)
+5. 마지막 대사는 강하게 끊어내거나 반전 펀치라인
+6. 절대로 "~입니다", "~하겠습니다" 같은 존댓말/문어체 금지
 
-## 출력 형식 (반드시 아래 JSON만 출력, 다른 텍스트 없이)
+## 이미지 프롬프트 규칙 (매우 중요!)
+- speaker가 "a"(남자)이면: 반드시 "close-up of angry Korean MAN" 으로 시작
+- speaker가 "b"(여자)이면: 반드시 "close-up of angry Korean WOMAN" 으로 시작
+- 배경에 커플 관계 맥락 포함 (카페, 집, 침대 옆 등)
+- 얼굴 표정이 감정을 명확히 드러내야 함
+- 실사 사진 스타일, 세로 9:16 비율, 텍스트 없음
+
+## 감정 레벨 (emotion 필드)
+- "shouting": 소리지르거나 완전 폭발
+- "angry": 화가 많이 남
+- "upset": 상처받거나 억울함
+- "sarcastic": 비꼬는 말투
+- "defiant": 단호하게 선 긋기
+- "normal": 비교적 차분
+
+## 출력 형식 (반드시 JSON만, 다른 텍스트 없이)
 {{
   "topic": "{topic}",
-  "title": "유튜브 쇼츠 제목 (호기심 유발, 30자 이내)",
-  "description": "유튜브 설명란 텍스트 (2~3줄)",
+  "title": "유튜브 쇼츠 제목 (35자 이내, 이모지 포함, 클릭 유발)",
+  "description": "영상 설명 (2~3줄, 해시태그 포함)",
+  "situation": "상황 요약 (20자 이내, 화면 상단 표시용)",
   "lines": [
-    {{"speaker": "a", "name": "{personas['a']['name']}", "text": "대사 내용"}},
-    {{"speaker": "b", "name": "{personas['b']['name']}", "text": "대사 내용"}}
-  ]
+    {{
+      "speaker": "a",
+      "name": "{personas['a']['name']}",
+      "text": "비속어/줄임말 포함한 자연스러운 대사",
+      "emotion": "angry",
+      "image_prompt": "close-up of angry Korean MAN, [구체적 감정 장면], realistic photo style, dramatic lighting, vertical 9:16, no text"
+    }},
+    {{
+      "speaker": "b",
+      "name": "{personas['b']['name']}",
+      "text": "비속어/줄임말 포함한 자연스러운 대사",
+      "emotion": "shouting",
+      "image_prompt": "close-up of angry Korean WOMAN, [구체적 감정 장면], realistic photo style, dramatic lighting, vertical 9:16, no text"
+    }}
+  ],
+  "question": "여러분의 판결은? \u2696\ufe0f\\n[A 입장 한 줄] vs [B 입장 한 줄]"
 }}"""
 
 
@@ -90,6 +126,11 @@ def _parse_response(raw_text: str, personas: dict, topic: str) -> dict:
     assert "lines" in script and len(script["lines"]) >= 2
     for line in script["lines"]:
         assert "speaker" in line and "text" in line
+        if "image_prompt" not in line:
+            line["image_prompt"] = (
+                f"Realistic Korean couple illustration, emotional scene related to '{topic}', "
+                "cinematic lighting, vertical 9:16 format, no text"
+            )
     return script
 
 

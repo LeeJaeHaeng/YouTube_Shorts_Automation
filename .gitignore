@@ -35,3 +35,11 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Imagen 생성 배경 이미지 (자동 생성 캐시)
+assets/backgrounds/*.jpg
+assets/backgrounds/*.png
+assets/bgm/
+
+# Claude Code 내부 파일
+.claude/
